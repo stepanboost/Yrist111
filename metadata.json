@@ -1,0 +1,8 @@
+{
+  "name": "Gemini Chat Pro - Feedback Driven AI",
+  "description": "A feature-rich chat application with user usage limits, a detailed feedback wall, admin dashboard for prompt management, and conversation history, all powered by Gemini AI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
