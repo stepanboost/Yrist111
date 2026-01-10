@@ -23,7 +23,8 @@ export const db = {
       createdAt: Date.now(),
       status: UserStatus.DEMO,
       demoTurnsLeft: 10,
-      lastSeenAt: Date.now()
+      lastSeenAt: Date.now(),
+      hasSeenWelcome: false
     };
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
     return newUser;
@@ -132,9 +133,9 @@ export const db = {
     
     return {
       id: 'default',
-      systemPrompt: 'You are a helpful assistant.',
-      ragPrompt: 'Use the following context to answer...',
-      fallbackPrompt: 'I am sorry, I cannot help with that.',
+      systemPrompt: 'Вы — высококвалифицированный юрист. Ваша задача — предоставлять точные, актуальные и понятные юридические консультации в соответствии с законодательством. Вы всегда вежливы, профессиональны и стремитесь максимально помочь пользователю.',
+      ragPrompt: 'Используйте следующий контекст из документов для предоставления юридического ответа...',
+      fallbackPrompt: 'К сожалению, я не могу дать точный ответ на этот вопрос. Рекомендую обратиться к профильному юристу очно.',
       version: 1,
       updatedAt: Date.now()
     };

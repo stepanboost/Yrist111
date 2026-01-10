@@ -7,7 +7,8 @@ import Chat from './components/Chat';
 import FeedbackWall from './components/FeedbackWall';
 import Profile from './components/Profile';
 import Admin from './components/Admin';
-import { MessageSquare, LayoutDashboard, User as UserIcon, LogOut, ChevronLeft, Menu } from 'lucide-react';
+import WelcomeScreen from './components/WelcomeScreen';
+import { MessageSquare, LayoutDashboard, User as UserIcon, LogOut, ChevronLeft, Menu, Gavel } from 'lucide-react';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -68,7 +69,19 @@ const App: React.FC = () => {
     handleUpdateUserStatus(UserStatus.BLOCKED);
   };
 
+  const handleWelcomeFinish = () => {
+    if (!user) return;
+    const updatedUser = { ...user, hasSeenWelcome: true };
+    db.updateUser(updatedUser);
+    setUser(updatedUser);
+  };
+
   if (!user) return null;
+
+  // Show Welcome Screen if not seen yet
+  if (!user.hasSeenWelcome) {
+    return <WelcomeScreen onStart={handleWelcomeFinish} />;
+  }
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-slate-950 text-slate-50">
@@ -76,7 +89,10 @@ const App: React.FC = () => {
       <aside className={`fixed inset-y-0 left-0 z-40 w-64 transform bg-slate-900 border-r border-slate-800 transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">Gemini Pro</h1>
+            <div className="flex items-center gap-2">
+              <Gavel className="text-indigo-500" size={24} />
+              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">Юрист</h1>
+            </div>
             <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-slate-400 hover:text-white">
               <ChevronLeft size={20} />
             </button>

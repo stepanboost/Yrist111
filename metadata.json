@@ -1,6 +1,6 @@
 {
-  "name": "Gemini Chat Pro - Feedback Driven AI",
-  "description": "A feature-rich chat application with user usage limits, a detailed feedback wall, admin dashboard for prompt management, and conversation history, all powered by Gemini AI.",
+  "name": "Электронный Юрист - Интеллектуальная юридическая помощь",
+  "description": "Полнофункциональное веб-приложение для получения юридических консультаций с помощью ИИ Gemini. Включает управление диалогами, экспорт в Word и панель администратора.",
   "requestFramePermissions": [
     "camera",
     "microphone"

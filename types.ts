@@ -33,6 +33,7 @@ export interface User {
   status: UserStatus;
   demoTurnsLeft: number;
   lastSeenAt: number;
+  hasSeenWelcome: boolean;
 }
 
 export interface Feedback {
