@@ -1,6 +1,7 @@
 
 import { User, UserStatus, Conversation, Message, Feedback, PromptConfig, KnowledgeFile } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { MODEL_CONFIG } from '../nastroiks';
 
 const STORAGE_KEYS = {
   USER: 'chat_app_user',
@@ -120,7 +121,7 @@ export const db = {
 
   // ADMIN OPERATIONS
   getStats: () => {
-    const users = localStorage.getItem(STORAGE_KEYS.USER) ? 1 : 0; // Simple since we only have 1 local user
+    const users = localStorage.getItem(STORAGE_KEYS.USER) ? 1 : 0; 
     const convs = (localStorage.getItem(STORAGE_KEYS.CONVERSATIONS) ? JSON.parse(localStorage.getItem(STORAGE_KEYS.CONVERSATIONS)!) : []).length;
     const msgs = (localStorage.getItem(STORAGE_KEYS.MESSAGES) ? JSON.parse(localStorage.getItem(STORAGE_KEYS.MESSAGES)!) : []).length;
     const feedback = (localStorage.getItem(STORAGE_KEYS.FEEDBACK) ? JSON.parse(localStorage.getItem(STORAGE_KEYS.FEEDBACK)!) : []).length;
@@ -131,11 +132,12 @@ export const db = {
     const stored = localStorage.getItem(STORAGE_KEYS.PROMPTS);
     if (stored) return JSON.parse(stored);
     
+    // Синхронизация с nastroiks.ts при первом запуске
     return {
       id: 'default',
-      systemPrompt: 'Вы — высококвалифицированный юрист. Ваша задача — предоставлять точные, актуальные и понятные юридические консультации в соответствии с законодательством. Вы всегда вежливы, профессиональны и стремитесь максимально помочь пользователю.',
-      ragPrompt: 'Используйте следующий контекст из документов для предоставления юридического ответа...',
-      fallbackPrompt: 'К сожалению, я не могу дать точный ответ на этот вопрос. Рекомендую обратиться к профильному юристу очно.',
+      systemPrompt: MODEL_CONFIG.systemInstruction,
+      ragPrompt: MODEL_CONFIG.ragContextPrompt,
+      fallbackPrompt: MODEL_CONFIG.fallbackResponse,
       version: 1,
       updatedAt: Date.now()
     };

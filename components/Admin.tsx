@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { db } from '../lib/store';
 import { PromptConfig, KnowledgeFile } from '../types';
-import { LayoutDashboard, FileText, Settings, Database, Upload, Trash2, Save, LogIn, Lock, Users, MessageCircle, Heart, ShieldX, CheckCircle, Info } from 'lucide-react';
+import { MODEL_CONFIG } from '../nastroiks';
+import { LayoutDashboard, FileText, Settings, Database, Upload, Trash2, Save, LogIn, Lock, Users, MessageCircle, Heart, ShieldX, CheckCircle, Info, FileStack } from 'lucide-react';
 
 const Admin: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -15,10 +16,10 @@ const Admin: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'admin') {
+    if (password === '12345') {
       setIsLoggedIn(true);
     } else {
-      alert('Неверный пароль');
+      alert('Доступ запрещен. Неверный пароль.');
     }
   };
 
@@ -26,13 +27,21 @@ const Admin: React.FC = () => {
     const updated = { ...prompts, updatedAt: Date.now(), version: prompts.version + 1 };
     db.updatePrompts(updated);
     setPrompts(updated);
-    setSaveStatus('Сохранено');
+    setSaveStatus('Конфигурация обновлена');
     setTimeout(() => setSaveStatus(null), 2000);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Проверка на формат Word
+    const isDocx = file.name.endsWith('.docx') || file.name.endsWith('.doc') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    
+    if (!isDocx) {
+      alert('Пожалуйста, загружайте файлы только в формате Word (.doc, .docx) для корректного обучения модели.');
+      return;
+    }
     
     db.addFile({
       originalName: file.name,
@@ -51,14 +60,14 @@ const Admin: React.FC = () => {
           </div>
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold text-white tracking-tight">Панель управления</h2>
-            <p className="text-slate-500 text-sm">Доступ только для администраторов</p>
+            <p className="text-slate-500 text-sm">Доступ только по спец-паролю</p>
           </div>
           <div className="space-y-4">
             <input 
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Введите пароль"
+              placeholder="Введите пароль (12345)"
               className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl py-4 px-5 focus:ring-2 focus:ring-indigo-600 outline-none transition-all placeholder:text-slate-700"
             />
             <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98] flex items-center justify-center gap-2 group">
@@ -66,7 +75,7 @@ const Admin: React.FC = () => {
               <LogIn size={20} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
-          <p className="text-[10px] text-center text-slate-700 uppercase tracking-widest font-black">Admin Access Required</p>
+          <p className="text-[10px] text-center text-slate-700 uppercase tracking-widest font-black">Authorized Access Only</p>
         </form>
       </div>
     );
@@ -81,8 +90,8 @@ const Admin: React.FC = () => {
         <div className="flex overflow-x-auto no-scrollbar">
           {[
             { id: 'stats', label: 'Аналитика', icon: LayoutDashboard },
-            { id: 'knowledge', label: 'База знаний', icon: Database },
-            { id: 'prompts', label: 'Промпты', icon: Settings }
+            { id: 'knowledge', label: 'Обучение (Word)', icon: FileStack },
+            { id: 'prompts', label: 'Инструкции', icon: Settings }
           ].map((tab) => (
             <button 
               key={tab.id}
@@ -98,9 +107,13 @@ const Admin: React.FC = () => {
             </button>
           ))}
         </div>
-        <div className="hidden md:flex items-center gap-2 text-[10px] font-bold text-slate-600 uppercase tracking-tighter">
-          <Info size={12} />
-          Система работает штатно
+        <div className="hidden md:flex items-center gap-4">
+          <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter border border-indigo-500/30 px-2 py-1 rounded">
+            Модель: {MODEL_CONFIG.model}
+          </div>
+          <div className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">
+            System Online
+          </div>
         </div>
       </div>
 
@@ -112,57 +125,22 @@ const Admin: React.FC = () => {
             <div className="space-y-10 animate-in fade-in duration-700">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                  { label: 'Пользователи', val: statsData.users, icon: Users, theme: 'indigo' },
-                  { label: 'Диалоги', val: statsData.convs, icon: MessageCircle, theme: 'blue' },
+                  { label: 'Клиенты', val: statsData.users, icon: Users, theme: 'indigo' },
+                  { label: 'Запросы', val: statsData.convs, icon: MessageCircle, theme: 'blue' },
                   { label: 'Отзывы', val: statsData.feedback, icon: Heart, theme: 'rose' },
-                  { label: 'Блокировки', val: 0, icon: ShieldX, theme: 'red' }
+                  { label: 'База знаний', val: files.length, icon: Database, theme: 'emerald' }
                 ].map((s, i) => (
                   <div key={i} className="bg-slate-900 border border-slate-800 p-6 rounded-3xl group hover:border-slate-700 transition-all shadow-sm">
                      <div className="flex items-center justify-between mb-4">
                         <div className={`p-3 rounded-2xl bg-slate-800 text-slate-400 group-hover:bg-${s.theme}-600/10 group-hover:text-${s.theme}-500 transition-colors`}>
                           <s.icon size={22} />
                         </div>
-                        <div className="text-[10px] font-black text-slate-700 uppercase">Live</div>
+                        <div className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Live</div>
                      </div>
                      <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{s.label}</p>
                      <p className="text-4xl font-extrabold text-white mt-1 tracking-tight">{s.val}</p>
                   </div>
                 ))}
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden">
-                  <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20">
-                    <h3 className="font-bold text-sm text-white uppercase tracking-widest">Последние отзывы</h3>
-                    <button className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300">Смотреть все</button>
-                  </div>
-                  <div className="p-12 text-center space-y-4">
-                    <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto text-slate-700">
-                      <Heart size={32} />
-                    </div>
-                    <p className="text-slate-500 text-sm italic">Список отзывов пуст</p>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden">
-                  <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20">
-                    <h3 className="font-bold text-sm text-white uppercase tracking-widest">Активность системы</h3>
-                    <div className="flex gap-1">
-                      <div className="w-1 h-3 bg-indigo-500 animate-pulse"></div>
-                      <div className="w-1 h-3 bg-indigo-500 animate-pulse [animation-delay:0.2s]"></div>
-                      <div className="w-1 h-3 bg-indigo-500 animate-pulse [animation-delay:0.4s]"></div>
-                    </div>
-                  </div>
-                  <div className="p-6 space-y-4">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="flex items-center gap-4 text-xs">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                        <span className="text-slate-500 font-medium">12:4{i}</span>
-                        <span className="text-slate-300">Пользователь #{i}45 получил ответ ИИ</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -172,29 +150,35 @@ const Admin: React.FC = () => {
               <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-12 text-center space-y-6 shadow-inner relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-blue-500"></div>
                 <div className="w-20 h-20 bg-slate-800/50 text-slate-500 rounded-3xl flex items-center justify-center mx-auto border-2 border-dashed border-slate-700 group-hover:border-indigo-500/50 group-hover:text-indigo-500 transition-all duration-500">
-                  <Upload size={36} />
+                  <FileStack size={36} />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-bold text-white tracking-tight">Обновите базу знаний</h3>
-                  <p className="text-slate-500 text-sm max-w-sm mx-auto">Загрузите актуальные законы и нормативные акты для улучшения качества ответов ассистента.</p>
+                  <h3 className="text-2xl font-bold text-white tracking-tight">Загрузите Word-файлы для обучения</h3>
+                  <p className="text-slate-500 text-sm max-w-sm mx-auto">Модель будет использовать содержимое этих документов для формирования более точных юридических ответов.</p>
                 </div>
-                <input type="file" onChange={handleFileUpload} className="hidden" id="file-upload" />
+                <input type="file" accept=".doc,.docx" onChange={handleFileUpload} className="hidden" id="file-upload" />
                 <label 
                   htmlFor="file-upload" 
-                  className="inline-flex items-center gap-2 bg-white text-slate-950 px-8 py-4 rounded-2xl cursor-pointer font-bold text-sm transition-all hover:bg-indigo-50 active:scale-95 shadow-xl shadow-white/5"
+                  className="inline-flex items-center gap-2 bg-indigo-600 text-white px-8 py-4 rounded-2xl cursor-pointer font-bold text-sm transition-all hover:bg-indigo-500 active:scale-95 shadow-xl shadow-indigo-600/20"
                 >
-                  Выбрать документы
+                  <Upload size={18} />
+                  Выбрать .docx файлы
                 </label>
+                <p className="text-[10px] text-slate-600 uppercase font-bold tracking-widest">Поддерживаются: DOCX, DOC</p>
               </div>
 
               <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+                 <div className="px-8 py-5 border-b border-slate-800 bg-slate-800/30 flex items-center justify-between">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Проиндексированные документы</h4>
+                    <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded border border-emerald-500/20">Ready for RAG</span>
+                 </div>
                  <table className="w-full text-left text-xs uppercase tracking-widest font-bold">
                    <thead className="bg-slate-800/50 text-slate-500 border-b border-slate-800">
                      <tr>
-                       <th className="px-8 py-5">Документ</th>
+                       <th className="px-8 py-5">Имя файла</th>
                        <th className="px-8 py-5">Размер</th>
-                       <th className="px-8 py-5">Дата загрузки</th>
-                       <th className="px-8 py-5">Действия</th>
+                       <th className="px-8 py-5">Статус обучения</th>
+                       <th className="px-8 py-5 text-right">Действие</th>
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-slate-800">
@@ -205,8 +189,13 @@ const Admin: React.FC = () => {
                            {f.originalName}
                          </td>
                          <td className="px-8 py-5">{(f.size / 1024).toFixed(1)} KB</td>
-                         <td className="px-8 py-5 font-medium text-slate-500">{new Date(f.createdAt).toLocaleDateString()}</td>
                          <td className="px-8 py-5">
+                           <div className="flex items-center gap-2 text-emerald-500">
+                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                             Активен
+                           </div>
+                         </td>
+                         <td className="px-8 py-5 text-right">
                            <button className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all"><Trash2 size={16} /></button>
                          </td>
                        </tr>
@@ -214,7 +203,7 @@ const Admin: React.FC = () => {
                    </tbody>
                  </table>
                  {files.length === 0 && (
-                   <div className="p-20 text-center text-slate-600 italic text-sm">В базе знаний пока нет файлов</div>
+                   <div className="p-20 text-center text-slate-600 italic text-sm">База знаний пуста. Загрузите файлы для активации юридического контекста.</div>
                  )}
               </div>
             </div>
@@ -224,8 +213,8 @@ const Admin: React.FC = () => {
             <div className="space-y-10 animate-in fade-in duration-700">
               <div className="flex items-center justify-between">
                  <div className="space-y-1">
-                   <h2 className="text-3xl font-extrabold text-white tracking-tight">Конфигуратор логики</h2>
-                   <p className="text-slate-500 text-sm font-medium">Версия промптов: {prompts.version}</p>
+                   <h2 className="text-3xl font-extrabold text-white tracking-tight">Настройки Юриста</h2>
+                   <p className="text-slate-500 text-sm font-medium">Версия промптов: {prompts.version} | Базовые настройки из nastroiks.ts</p>
                  </div>
                  <button 
                   onClick={handleSavePrompts}
@@ -236,15 +225,22 @@ const Admin: React.FC = () => {
                   }`}
                  >
                    {saveStatus ? <CheckCircle size={20} /> : <Save size={20} />}
-                   {saveStatus || 'Применить изменения'}
+                   {saveStatus || 'Сохранить изменения'}
                  </button>
               </div>
 
               <div className="grid grid-cols-1 gap-10 pb-10">
+                <div className="bg-amber-900/10 border border-amber-900/30 p-6 rounded-3xl flex gap-4">
+                  <Info className="text-amber-500 shrink-0" />
+                  <p className="text-xs text-amber-200/70 leading-relaxed">
+                    Внимание: Вы редактируете текущие настройки сессии. Чтобы изменить настройки по умолчанию для всех новых пользователей, отредактируйте файл <code className="bg-slate-950 px-1 rounded text-white">nastroiks.ts</code> в корне проекта.
+                  </p>
+                </div>
+
                 {[
-                  { key: 'systemPrompt', label: 'Глобальная роль', desc: 'Задает тон, стиль и профессиональные ограничения ИИ' },
-                  { key: 'ragPrompt', label: 'Интеграция знаний', desc: 'Определяет, как ИИ должен цитировать внешние документы' },
-                  { key: 'fallbackPrompt', label: 'Обработка ошибок', desc: 'Текст при отсутствии ответа или нарушении политики' }
+                  { key: 'systemPrompt', label: 'Главная инструкция юриста', desc: 'Как ИИ должен себя вести и на каком языке общаться' },
+                  { key: 'ragPrompt', label: 'Инструкция по контексту (RAG)', desc: 'Как ИИ должен использовать данные из загруженных Word-файлов' },
+                  { key: 'fallbackPrompt', label: 'Фраза при отсутствии данных', desc: 'Что говорить, если юрист не нашел ответа в базе' }
                 ].map((f) => (
                   <div key={f.key} className="space-y-4">
                     <label className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">

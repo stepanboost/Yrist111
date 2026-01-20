@@ -7,6 +7,7 @@
     <title>Электронный юрист - Онлайн-помощь</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -27,9 +28,23 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #475569;
         }
-        .bg-legal-gradient {
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        }
+        
+        /* Markdown Styling to match ChatGPT/Premium look */
+        .prose { max-width: none; color: #cbd5e1; }
+        .prose p { margin-bottom: 1rem; line-height: 1.6; }
+        .prose strong { color: #f8fafc; font-weight: 600; }
+        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .prose ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .prose li { margin-bottom: 0.5rem; }
+        .prose h1, .prose h2, .prose h3 { color: #fff; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .prose h1 { border-bottom: 1px solid #1e293b; padding-bottom: 0.5rem; }
+        .prose code { background: #1e293b; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.9em; }
+        .prose pre { background: #020617; padding: 1rem; border-radius: 0.75rem; overflow-x: auto; border: 1px solid #1e293b; margin: 1rem 0; }
+        .prose pre code { background: transparent; padding: 0; }
+        .prose blockquote { border-left: 4px solid #4f46e5; padding-left: 1rem; font-style: italic; color: #94a3b8; margin: 1.5rem 0; }
+        .prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9em; }
+        .prose th, .prose td { border: 1px solid #1e293b; padding: 0.75rem; text-align: left; }
+        .prose th { background: #0f172a; color: #fff; }
     </style>
 <script type="importmap">
 {
@@ -39,9 +54,12 @@
     "react": "https://esm.sh/react@^19.2.3",
     "file-saver": "https://esm.sh/file-saver@^2.0.5",
     "docx": "https://esm.sh/docx@^9.5.1",
+    "mammoth": "https://esm.sh/mammoth@^1.8.0",
     "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "uuid": "https://esm.sh/uuid@^13.0.0"
+    "uuid": "https://esm.sh/uuid@^13.0.0",
+    "marked": "https://esm.sh/marked@^12.0.0",
+    "highlight.js": "https://esm.sh/highlight.js@^11.9.0"
   }
 }
 </script>
