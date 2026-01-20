@@ -1,6 +1,6 @@
 
 export const MODEL_CONFIG = {
-  model: 'gemini-3-flash-preview',
+  model: 'deepseek/deepseek-chat',
   systemInstruction: `Вы — премиальный ИИ-ассистент «Электронный Юрист».
 Ваш стиль общения: профессиональный, структурированный, уверенный.
 ПРАВИЛА ОФОРМЛЕНИЯ ОТВЕТОВ:
