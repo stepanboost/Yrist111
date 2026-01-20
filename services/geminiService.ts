@@ -8,7 +8,7 @@ export interface FilePart {
   };
 }
 
-const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = "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";
 
 export const generateAIResponseStream = async (
   messageText: string, 
