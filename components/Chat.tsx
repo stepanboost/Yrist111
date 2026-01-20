@@ -10,17 +10,24 @@ import mammoth from 'mammoth';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 
+// Настройка marked с подсветкой кода для v5+
+marked.use({
+  renderer: {
+    code(code: string, language: string | undefined) {
+      const lang = language || '';
+      const highlighted = lang && hljs.getLanguage(lang)
+        ? hljs.highlight(code, { language: lang }).value
+        : hljs.highlightAuto(code).value;
+      return `<pre><code class="hljs ${lang}">${highlighted}</code></pre>`;
+    }
+  }
+});
+
 const MarkdownContent: React.FC<{ content: string }> = ({ content }) => {
   const htmlContent = useMemo(() => {
     return marked.parse(content, {
       gfm: true,
-      breaks: true,
-      highlight: (code, lang) => {
-        if (lang && hljs.getLanguage(lang)) {
-          return hljs.highlight(code, { language: lang }).value;
-        }
-        return hljs.highlightAuto(code).value;
-      }
+      breaks: true
     });
   }, [content]);
 
