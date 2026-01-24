@@ -8,7 +8,7 @@ export interface FilePart {
   };
 }
 
-// URL для Netlify Function (работает и локально через netlify dev, и на продакшене)
+// URL для Netlify Function
 const CHAT_API_URL = "/.netlify/functions/chat";
 
 export const generateAIResponseStream = async (
@@ -57,39 +57,33 @@ export const generateAIResponseStream = async (
         ],
         temperature: MODEL_CONFIG.temperature,
         top_p: MODEL_CONFIG.topP,
-        max_tokens: MODEL_CONFIG.maxOutputTokens,
-        stream: true
+        max_tokens: MODEL_CONFIG.maxOutputTokens
       })
     });
 
     if (!response.ok) {
       const errorData = await response.text();
       console.error("API Error:", errorData);
-      throw new Error(`API Error: ${response.status}`);
+      throw new Error(`API Error: ${response.status} - ${errorData}`);
     }
 
-    // Парсим streaming response
-    const responseText = await response.text();
-    const lines = responseText.split('\n').filter(line => line.trim() !== '');
-
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const data = line.slice(6);
-        if (data === '[DONE]') continue;
-
-        try {
-          const parsed = JSON.parse(data);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) {
-            onChunk(content);
-          }
-        } catch (e) {
-          // Skip invalid JSON
-        }
+    const data = await response.json();
+    
+    // Извлекаем текст ответа
+    const assistantMessage = data.choices?.[0]?.message?.content;
+    
+    if (assistantMessage) {
+      // Эмулируем стриминг для плавного отображения
+      const words = assistantMessage.split(' ');
+      for (const word of words) {
+        onChunk(word + ' ');
+        await new Promise(resolve => setTimeout(resolve, 20));
       }
+    } else {
+      throw new Error("No response from AI");
     }
   } catch (error) {
     console.error("Chat API Error:", error);
-    onChunk("\n\n❌ **Ошибка соединения.** Проверьте подключение к серверу.");
+    onChunk("\n\n❌ **Ошибка соединения.** " + String(error));
   }
 };
