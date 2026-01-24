@@ -47,10 +47,8 @@ exports.handler = async (event) => {
         messages: body.messages,
         temperature: body.temperature ?? 0.3,
         top_p: body.top_p ?? 0.85,
-        max_tokens: body.max_tokens ?? 8192,
+        max_tokens: body.max_tokens ?? 2048,
         stream: false,
-        // Включаем reasoning для DeepSeek R1
-        include_reasoning: true,
       }),
     });
 
