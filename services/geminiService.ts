@@ -8,13 +8,18 @@ export interface FilePart {
   };
 }
 
+export interface AIResponse {
+  content: string;
+  reasoning?: string;
+}
+
 // URL для Netlify Function
 const CHAT_API_URL = "/.netlify/functions/chat";
 
 export const generateAIResponseStream = async (
   messageText: string, 
   fileParts: FilePart[] = [],
-  onChunk: (text: string) => void
+  onChunk: (text: string, reasoning?: string) => void
 ): Promise<void> => {
   
   try {
@@ -69,15 +74,22 @@ export const generateAIResponseStream = async (
 
     const data = await response.json();
     
-    // Извлекаем текст ответа
-    const assistantMessage = data.choices?.[0]?.message?.content;
+    // Извлекаем reasoning (Deep Thinking) и основной ответ
+    const reasoning = data.reasoning_content;
+    const finalContent = data.final_content || data.choices?.[0]?.message?.content;
     
-    if (assistantMessage) {
-      // Эмулируем стриминг для плавного отображения
-      const words = assistantMessage.split(' ');
+    if (finalContent) {
+      // Сначала показываем reasoning если есть
+      if (reasoning) {
+        onChunk("", reasoning);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Затем эмулируем стриминг основного ответа
+      const words = finalContent.split(' ');
       for (const word of words) {
         onChunk(word + ' ');
-        await new Promise(resolve => setTimeout(resolve, 20));
+        await new Promise(resolve => setTimeout(resolve, 15));
       }
     } else {
       throw new Error("No response from AI");

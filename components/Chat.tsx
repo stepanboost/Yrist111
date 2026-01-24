@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { User, Conversation, Message, MessageRole, UserStatus } from '../types';
 import { db } from '../lib/store';
 import { generateAIResponseStream, FilePart } from '../services/geminiService';
-import { Send, FileDown, Bot, User as UserIcon, Loader2, Sparkles, Paperclip, X, FileText, Info } from 'lucide-react';
+import { Send, FileDown, Bot, User as UserIcon, Loader2, Sparkles, Paperclip, X, FileText, Info, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import saveAs from 'file-saver';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import mammoth from 'mammoth';
@@ -34,6 +34,36 @@ const MarkdownContent: React.FC<{ content: string }> = ({ content }) => {
   return <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
 };
 
+// Компонент для отображения Deep Thinking
+const ThinkingBlock: React.FC<{ reasoning: string; isStreaming?: boolean }> = ({ reasoning, isStreaming }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!reasoning) return null;
+
+  return (
+    <div className="mb-4 rounded-xl border border-purple-500/30 bg-purple-950/20 overflow-hidden">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-purple-900/20 transition-colors"
+      >
+        <Brain size={18} className={`text-purple-400 ${isStreaming ? 'animate-pulse' : ''}`} />
+        <span className="text-purple-300 font-medium text-sm flex-1">
+          {isStreaming ? '🧠 Размышляю...' : '🧠 Deep Thinking (процесс размышления)'}
+        </span>
+        {isExpanded ? <ChevronUp size={18} className="text-purple-400" /> : <ChevronDown size={18} className="text-purple-400" />}
+      </button>
+      
+      {isExpanded && (
+        <div className="px-4 pb-4 border-t border-purple-500/20">
+          <div className="mt-3 text-xs text-purple-300/80 whitespace-pre-wrap font-mono leading-relaxed max-h-96 overflow-y-auto custom-scrollbar">
+            {reasoning}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface AttachedFile {
   name: string;
   type: string;
@@ -48,11 +78,21 @@ interface ChatProps {
   onMessageSent: (messages: Message[], user: User) => void;
 }
 
+// Парсим сообщение чтобы извлечь reasoning если он сохранён
+const parseMessageContent = (content: string): { reasoning?: string; answer: string } => {
+  const thinkMatch = content.match(/^<think>([\s\S]*?)<\/think>\s*([\s\S]*)$/);
+  if (thinkMatch) {
+    return { reasoning: thinkMatch[1].trim(), answer: thinkMatch[2].trim() };
+  }
+  return { answer: content };
+};
+
 const Chat: React.FC<ChatProps> = ({ user, conversation, messages, onMessageSent }) => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [currentStreamingText, setCurrentStreamingText] = useState('');
+  const [currentReasoning, setCurrentReasoning] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,16 +154,32 @@ const Chat: React.FC<ChatProps> = ({ user, conversation, messages, onMessageSent
     setAttachedFiles([]);
     setIsTyping(true);
     setCurrentStreamingText('');
+    setCurrentReasoning('');
 
     let fullText = '';
+    let reasoning = '';
+    
     try {
-      await generateAIResponseStream(promptWithContext, fileParts, (chunk) => {
-        fullText += chunk;
-        setCurrentStreamingText(fullText);
+      await generateAIResponseStream(promptWithContext, fileParts, (chunk, reasoningChunk) => {
+        if (reasoningChunk) {
+          reasoning = reasoningChunk;
+          setCurrentReasoning(reasoning);
+        }
+        if (chunk) {
+          fullText += chunk;
+          setCurrentStreamingText(fullText);
+        }
       });
-      const aiMsg = db.addMessage({ conversationId: conversation.id, role: MessageRole.ASSISTANT, content: fullText });
+      
+      // Сохраняем с reasoning если есть
+      const contentToSave = reasoning 
+        ? `<think>${reasoning}</think>\n${fullText}`
+        : fullText;
+      
+      const aiMsg = db.addMessage({ conversationId: conversation.id, role: MessageRole.ASSISTANT, content: contentToSave });
       onMessageSent([...messages, userMsg, aiMsg], updatedUser);
       setCurrentStreamingText('');
+      setCurrentReasoning('');
     } finally {
       setIsTyping(false);
     }
@@ -146,20 +202,47 @@ const Chat: React.FC<ChatProps> = ({ user, conversation, messages, onMessageSent
     <div className="flex flex-col h-full bg-[#0a0f1d]">
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 custom-scrollbar">
         <div className="max-w-4xl mx-auto space-y-8 pb-10">
-          {messages.map((m) => (
-            <div key={m.id} className={`flex gap-4 ${m.role === MessageRole.USER ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg ${m.role === MessageRole.USER ? 'bg-indigo-600' : 'bg-slate-800'}`}>
-                {m.role === MessageRole.USER ? <UserIcon size={20} /> : <Bot size={20} className="text-indigo-400" />}
+          {messages.map((m) => {
+            const parsed = m.role === MessageRole.ASSISTANT ? parseMessageContent(m.content) : null;
+            
+            return (
+              <div key={m.id} className={`flex gap-4 ${m.role === MessageRole.USER ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg ${m.role === MessageRole.USER ? 'bg-indigo-600' : 'bg-slate-800'}`}>
+                  {m.role === MessageRole.USER ? <UserIcon size={20} /> : <Bot size={20} className="text-indigo-400" />}
+                </div>
+                <div className={`p-5 rounded-2xl max-w-[85%] text-sm ${m.role === MessageRole.USER ? 'bg-indigo-600/10 border border-indigo-500/20' : 'bg-[#0f172a] border border-slate-800'}`}>
+                  {m.role === MessageRole.USER ? (
+                    <div className="whitespace-pre-wrap">{m.content}</div>
+                  ) : (
+                    <>
+                      {parsed?.reasoning && <ThinkingBlock reasoning={parsed.reasoning} />}
+                      <MarkdownContent content={parsed?.answer || m.content} />
+                    </>
+                  )}
+                </div>
               </div>
-              <div className={`p-5 rounded-2xl max-w-[85%] text-sm ${m.role === MessageRole.USER ? 'bg-indigo-600/10 border border-indigo-500/20' : 'bg-[#0f172a] border border-slate-800'}`}>
-                {m.role === MessageRole.USER ? <div className="whitespace-pre-wrap">{m.content}</div> : <MarkdownContent content={m.content} />}
-              </div>
-            </div>
-          ))}
-          {currentStreamingText && (
+            );
+          })}
+          
+          {/* Streaming message */}
+          {(currentStreamingText || currentReasoning || isTyping) && (
             <div className="flex gap-4 animate-in fade-in">
-              <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0"><Bot size={20} className="text-indigo-400" /></div>
-              <div className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 text-sm"><MarkdownContent content={currentStreamingText} /></div>
+              <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
+                <Bot size={20} className="text-indigo-400" />
+              </div>
+              <div className="p-5 rounded-2xl bg-[#0f172a] border border-slate-800 text-sm min-w-[200px]">
+                {currentReasoning && (
+                  <ThinkingBlock reasoning={currentReasoning} isStreaming={!currentStreamingText} />
+                )}
+                {currentStreamingText ? (
+                  <MarkdownContent content={currentStreamingText} />
+                ) : (
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>{currentReasoning ? 'Формирую ответ...' : 'Анализирую запрос...'}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -209,8 +292,8 @@ const Chat: React.FC<ChatProps> = ({ user, conversation, messages, onMessageSent
             </div>
           </div>
           <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-slate-600 font-black tracking-widest uppercase">
-            <Info size={12} />
-            Модель проанализирует загруженные документы
+            <Brain size={12} className="text-purple-500" />
+            DeepSeek R1 с Deep Thinking
           </div>
         </div>
       </div>

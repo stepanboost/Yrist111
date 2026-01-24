@@ -1,7 +1,6 @@
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 exports.handler = async (event) => {
-  // CORS headers
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -9,7 +8,6 @@ exports.handler = async (event) => {
     "Content-Type": "application/json",
   };
 
-  // Handle preflight
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers, body: "" };
   }
@@ -23,18 +21,18 @@ exports.handler = async (event) => {
   }
 
   if (!OPENROUTER_API_KEY) {
-    console.error("OPENROUTER_API_KEY not set in environment variables");
+    console.error("OPENROUTER_API_KEY not set");
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: "Server configuration error: API key not set" }),
+      body: JSON.stringify({ error: "API key not configured" }),
     };
   }
 
   try {
     const body = JSON.parse(event.body || "{}");
 
-    console.log("Calling OpenRouter API...");
+    console.log("Calling OpenRouter API with model:", body.model);
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -45,12 +43,14 @@ exports.handler = async (event) => {
         "X-Title": "Electronic Lawyer",
       },
       body: JSON.stringify({
-        model: body.model || "deepseek/deepseek-chat",
+        model: body.model || "deepseek/deepseek-reasoner",
         messages: body.messages,
-        temperature: body.temperature ?? 0.4,
-        top_p: body.top_p ?? 0.9,
-        max_tokens: body.max_tokens ?? 4096,
-        stream: false, // Без стриминга для простоты
+        temperature: body.temperature ?? 0.3,
+        top_p: body.top_p ?? 0.85,
+        max_tokens: body.max_tokens ?? 8192,
+        stream: false,
+        // Включаем reasoning для DeepSeek R1
+        include_reasoning: true,
       }),
     });
 
@@ -65,12 +65,22 @@ exports.handler = async (event) => {
     }
 
     const data = await response.json();
-    console.log("OpenRouter response received successfully");
+    console.log("OpenRouter response received");
+
+    // Извлекаем reasoning_content если есть (для DeepSeek R1)
+    const choice = data.choices?.[0];
+    const reasoning = choice?.message?.reasoning_content || choice?.reasoning_content || null;
+    const content = choice?.message?.content || "";
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        ...data,
+        // Добавляем отдельные поля для удобства
+        reasoning_content: reasoning,
+        final_content: content,
+      }),
     };
   } catch (error) {
     console.error("Function error:", error);
