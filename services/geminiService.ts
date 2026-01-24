@@ -8,16 +8,8 @@ export interface FilePart {
   };
 }
 
-// Получаем URL бэкенда из переменных окружения
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-if (!API_BASE_URL) {
-  console.error(
-    "❌ VITE_API_BASE_URL не задан!\n" +
-    "Для локальной разработки: создайте .env файл с VITE_API_BASE_URL=http://localhost:8000\n" +
-    "Для Netlify: добавьте переменную в Site settings → Environment variables"
-  );
-}
+// URL для Netlify Function (работает и локально через netlify dev, и на продакшене)
+const CHAT_API_URL = "/.netlify/functions/chat";
 
 export const generateAIResponseStream = async (
   messageText: string, 
@@ -25,24 +17,6 @@ export const generateAIResponseStream = async (
   onChunk: (text: string) => void
 ): Promise<void> => {
   
-  // TODO: Реализовать вызов через бэкенд или Netlify Functions
-  // DeepSeek API ключ НЕ должен быть во фронтенде!
-  // 
-  // Пример реализации через бэкенд:
-  // const response = await fetch(`${API_BASE_URL}/api/chat`, {
-  //   method: "POST",
-  //   headers: { "Content-Type": "application/json" },
-  //   body: JSON.stringify({ message: messageText, files: fileParts, config: MODEL_CONFIG })
-  // });
-  //
-  // Или использовать Netlify Functions:
-  // const response = await fetch("/.netlify/functions/chat", { ... });
-
-  if (!API_BASE_URL) {
-    onChunk("⚠️ **Ошибка конфигурации:** VITE_API_BASE_URL не задан. Проверьте переменные окружения.");
-    return;
-  }
-
   try {
     // Подготовка контента с файлами (если есть)
     let content: any[] = [];
@@ -63,8 +37,8 @@ export const generateAIResponseStream = async (
       text: messageText
     });
 
-    // Вызов бэкенд API
-    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+    // Вызов Netlify Function
+    const response = await fetch(CHAT_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -94,39 +68,28 @@ export const generateAIResponseStream = async (
       throw new Error(`API Error: ${response.status}`);
     }
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
+    // Парсим streaming response
+    const responseText = await response.text();
+    const lines = responseText.split('\n').filter(line => line.trim() !== '');
 
-    if (!reader) {
-      throw new Error("No reader available");
-    }
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(data);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              onChunk(content);
-            }
-          } catch (e) {
-            // Skip invalid JSON
+        try {
+          const parsed = JSON.parse(data);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            onChunk(content);
           }
+        } catch (e) {
+          // Skip invalid JSON
         }
       }
     }
   } catch (error) {
-    console.error("API Streaming Error:", error);
-    onChunk("\n\n❌ **Ошибка соединения.** Проверьте подключение к бэкенду или переменную VITE_API_BASE_URL.");
+    console.error("Chat API Error:", error);
+    onChunk("\n\n❌ **Ошибка соединения.** Проверьте подключение к серверу.");
   }
 };

@@ -1,9 +1,9 @@
-# Конфигурация Netlify для Vite SPA
+# Конфигурация Netlify для Vite SPA + Functions
 
 [build]
-  # Корень репозитория (пусто = корень)
+  # Корень репозитория
   base = ""
-  # Папка с билдом
+  # Папка с билдом фронтенда
   publish = "dist"
   # Команда сборки
   command = "npm run build"
@@ -11,7 +11,12 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# SPA redirect - все пути ведут на index.html
+# Настройки Netlify Functions
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# SPA redirect - все пути (кроме functions) ведут на index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
