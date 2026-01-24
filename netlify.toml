@@ -1,12 +1,26 @@
+# Конфигурация Netlify для Vite SPA
+
 [build]
+  # Корень репозитория (пусто = корень)
   base = ""
+  # Папка с билдом
   publish = "dist"
+  # Команда сборки
   command = "npm run build"
 
 [build.environment]
   NODE_VERSION = "20"
 
+# SPA redirect - все пути ведут на index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Заголовки безопасности
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

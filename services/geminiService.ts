@@ -8,7 +8,16 @@ export interface FilePart {
   };
 }
 
-const OPENROUTER_API_KEY = "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";
+// Получаем URL бэкенда из переменных окружения
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  console.error(
+    "❌ VITE_API_BASE_URL не задан!\n" +
+    "Для локальной разработки: создайте .env файл с VITE_API_BASE_URL=http://localhost:8000\n" +
+    "Для Netlify: добавьте переменную в Site settings → Environment variables"
+  );
+}
 
 export const generateAIResponseStream = async (
   messageText: string, 
@@ -16,6 +25,24 @@ export const generateAIResponseStream = async (
   onChunk: (text: string) => void
 ): Promise<void> => {
   
+  // TODO: Реализовать вызов через бэкенд или Netlify Functions
+  // DeepSeek API ключ НЕ должен быть во фронтенде!
+  // 
+  // Пример реализации через бэкенд:
+  // const response = await fetch(`${API_BASE_URL}/api/chat`, {
+  //   method: "POST",
+  //   headers: { "Content-Type": "application/json" },
+  //   body: JSON.stringify({ message: messageText, files: fileParts, config: MODEL_CONFIG })
+  // });
+  //
+  // Или использовать Netlify Functions:
+  // const response = await fetch("/.netlify/functions/chat", { ... });
+
+  if (!API_BASE_URL) {
+    onChunk("⚠️ **Ошибка конфигурации:** VITE_API_BASE_URL не задан. Проверьте переменные окружения.");
+    return;
+  }
+
   try {
     // Подготовка контента с файлами (если есть)
     let content: any[] = [];
@@ -36,13 +63,11 @@ export const generateAIResponseStream = async (
       text: messageText
     });
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    // Вызов бэкенд API
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": window.location.origin,
-        "X-Title": "Electronic Lawyer"
       },
       body: JSON.stringify({
         model: MODEL_CONFIG.model,
@@ -101,7 +126,7 @@ export const generateAIResponseStream = async (
       }
     }
   } catch (error) {
-    console.error("DeepSeek Streaming Error:", error);
-    onChunk("\n\n❌ **Ошибка соединения.** Пожалуйста, проверьте подключение к интернету.");
+    console.error("API Streaming Error:", error);
+    onChunk("\n\n❌ **Ошибка соединения.** Проверьте подключение к бэкенду или переменную VITE_API_BASE_URL.");
   }
 };
