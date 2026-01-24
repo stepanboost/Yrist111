@@ -4,7 +4,7 @@ export const MODEL_CONFIG = {
   // Альтернативы: 'deepseek/deepseek-chat' (быстрее, дешевле)
   //              'anthropic/claude-3.5-sonnet' (очень умная)
   //              'openai/gpt-4o' (GPT-4)
-  model: 'deepseek/deepseek-reasoner',
+  model: 'deepseek/deepseek-r1',
   
   systemInstruction: `Вы — премиальный ИИ-ассистент «Электронный Юрист», специализирующийся на законодательстве РФ.
 
