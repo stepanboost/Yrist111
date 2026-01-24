@@ -43,7 +43,7 @@ exports.handler = async (event) => {
         "X-Title": "Electronic Lawyer",
       },
       body: JSON.stringify({
-        model: body.model || "deepseek/deepseek-r1",
+        model: body.model || "deepseek/deepseek-chat",
         messages: body.messages,
         temperature: body.temperature ?? 0.3,
         top_p: body.top_p ?? 0.85,
