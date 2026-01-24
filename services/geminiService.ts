@@ -8,22 +8,15 @@ export interface FilePart {
   };
 }
 
-export interface AIResponse {
-  content: string;
-  reasoning?: string;
-}
-
-// URL для Netlify Function
 const CHAT_API_URL = "/.netlify/functions/chat";
 
 export const generateAIResponseStream = async (
   messageText: string, 
   fileParts: FilePart[] = [],
-  onChunk: (text: string, reasoning?: string) => void
+  onChunk: (text: string) => void
 ): Promise<void> => {
   
   try {
-    // Подготовка контента с файлами (если есть)
     let content: any[] = [];
     
     if (fileParts.length > 0) {
@@ -42,7 +35,6 @@ export const generateAIResponseStream = async (
       text: messageText
     });
 
-    // Вызов Netlify Function
     const response = await fetch(CHAT_API_URL, {
       method: "POST",
       headers: {
@@ -73,19 +65,9 @@ export const generateAIResponseStream = async (
     }
 
     const data = await response.json();
-    
-    // Извлекаем reasoning (Deep Thinking) и основной ответ
-    const reasoning = data.reasoning_content;
     const finalContent = data.final_content || data.choices?.[0]?.message?.content;
     
     if (finalContent) {
-      // Сначала показываем reasoning если есть
-      if (reasoning) {
-        onChunk("", reasoning);
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      
-      // Затем эмулируем стриминг основного ответа
       const words = finalContent.split(' ');
       for (const word of words) {
         onChunk(word + ' ');

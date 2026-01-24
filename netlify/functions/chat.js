@@ -32,8 +32,6 @@ exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body || "{}");
 
-    console.log("Calling OpenRouter API with model:", body.model);
-
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -47,7 +45,7 @@ exports.handler = async (event) => {
         messages: body.messages,
         temperature: body.temperature ?? 0.3,
         top_p: body.top_p ?? 0.85,
-        max_tokens: body.max_tokens ?? 2048,
+        max_tokens: body.max_tokens ?? 4096,
         stream: false,
       }),
     });
@@ -63,20 +61,13 @@ exports.handler = async (event) => {
     }
 
     const data = await response.json();
-    console.log("OpenRouter response received");
-
-    // Извлекаем reasoning_content если есть (для DeepSeek R1)
-    const choice = data.choices?.[0];
-    const reasoning = choice?.message?.reasoning_content || choice?.reasoning_content || null;
-    const content = choice?.message?.content || "";
+    const content = data.choices?.[0]?.message?.content || "";
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         ...data,
-        // Добавляем отдельные поля для удобства
-        reasoning_content: reasoning,
         final_content: content,
       }),
     };
