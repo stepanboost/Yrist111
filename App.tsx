@@ -76,6 +76,13 @@ const App: React.FC = () => {
     setUser(updatedUser);
   };
 
+  const handleBackToLanding = () => {
+    if (!user) return;
+    const updatedUser = { ...user, hasSeenWelcome: false };
+    db.updateUser(updatedUser);
+    setUser(updatedUser);
+  };
+
   if (!user) return null;
 
   // Show Welcome Screen if not seen yet
@@ -123,6 +130,13 @@ const App: React.FC = () => {
               <LayoutDashboard size={18} />
               <span>Админка</span>
             </button>
+            <button 
+              onClick={handleBackToLanding}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-slate-400 hover:bg-slate-800 hover:text-white"
+            >
+              <LogOut size={18} />
+              <span>На главную</span>
+            </button>
           </div>
         </div>
       </aside>
@@ -150,8 +164,16 @@ const App: React.FC = () => {
              )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="text-xs text-slate-500 hidden sm:inline">ID: {user.id.slice(0, 8)}</span>
+            <button 
+              onClick={handleBackToLanding}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
+              title="Вернуться на главную"
+            >
+              <LogOut size={16} />
+              <span className="hidden md:inline">Выход</span>
+            </button>
           </div>
         </header>
 

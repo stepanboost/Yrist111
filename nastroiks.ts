@@ -1,4 +1,3 @@
-
 export const MODEL_CONFIG = {
   model: 'deepseek/deepseek-chat',
   systemInstruction: `Вы — премиальный ИИ-ассистент «Электронный Юрист».
